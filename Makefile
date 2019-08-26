@@ -29,7 +29,7 @@ PLIST_MKDIR         = $(DIR_LAUNCHAGENTS)/$(LABEL_MKDIR).plist
 PLIST_DEFAULTS      = $(DIR_LAUNCHAGENTS)/$(LABEL_DEFAULTS).plist
 PLIST_RMDIR         = $(DIR_LAUNCHAGENTS)/$(LABEL_RMDIR).plist
 
-.PHONY: help check install uninstall bootstrap bootout status
+.PHONY: help install uninstall bootstrap bootout list
 
 .DEFAULT_GOAL := help
 
@@ -41,9 +41,9 @@ install: $(PLIST_MKDIR) $(PLIST_DEFAULTS) $(PLIST_RMDIR) ## Generate service con
 	$(if $(findstring enabled, $(shell csrutil status)), $(info *** warning: SIP is enabled. Please make sure $(shell which defaults) is permitted 'Full Disk Access'. ))
 
 bootstrap: ## Bootstrap services into gui domain of current user.
-	@test -f '$(PLIST_MKDIR)'    && launchctl bootstrap gui/$(UID)/ $(PLIST_MKDIR)
-	@test -f '$(PLIST_DEFAULTS)' && launchctl bootstrap gui/$(UID)/ $(PLIST_DEFAULTS)
-	@test -f '$(PLIST_RMDIR)'    && launchctl bootstrap gui/$(UID)/ $(PLIST_RMDIR)
+	@test -f '$(PLIST_MKDIR)'    && launchctl bootstrap gui/$(UID)/ '$(PLIST_MKDIR)'
+	@test -f '$(PLIST_DEFAULTS)' && launchctl bootstrap gui/$(UID)/ '$(PLIST_DEFAULTS)'
+	@test -f '$(PLIST_RMDIR)'    && launchctl bootstrap gui/$(UID)/ '$(PLIST_RMDIR)'
 
 list: ## Display a list of the last exit status of services.
 	@launchctl list | grep -G '^PID\|$(IDENTIFIER)'
@@ -55,10 +55,10 @@ bootout: ## Remove services from gui domain of current user.
 
 uninstall: bootout ## Delete service configuration files and some related files.
 	@-rm '$(PLIST_DEFAULTS)' '$(PLIST_MKDIR)' '$(PLIST_RMDIR)' $(DIR_WORKING)/.$(NAME)
-	@-unlink $(DIR_WORKING)/today
+	@-unlink '$(DIR_WORKING)/today'
 
 $(DIR_LAUNCHAGENTS):
-	@mkdir $(DIR_LAUNCHAGENTS)
+	@mkdir '$(DIR_LAUNCHAGENTS)'
 
 $(PLIST_MKDIR): $(DIR_LAUNCHAGENTS)
 	@echo '' | plutil -convert xml1 -o $@ -
