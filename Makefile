@@ -19,7 +19,7 @@ IDENTIFIER          = io.github.rokudogobu.$(NAME)
 DIR_WORKING         = $(HOME)/Downloads
 DIR_LAUNCHAGENTS    = $(HOME)/Library/LaunchAgents
 
-UID                 = $(shell id -u)
+UID                := $(shell id -u)
 
 LABEL_MKDIR         = $(IDENTIFIER).mkdir
 LABEL_DEFAULTS      = $(IDENTIFIER).defaults
@@ -28,6 +28,10 @@ LABEL_RMDIR         = $(IDENTIFIER).rmdir
 PLIST_MKDIR         = $(DIR_LAUNCHAGENTS)/$(LABEL_MKDIR).plist
 PLIST_DEFAULTS      = $(DIR_LAUNCHAGENTS)/$(LABEL_DEFAULTS).plist
 PLIST_RMDIR         = $(DIR_LAUNCHAGENTS)/$(LABEL_RMDIR).plist
+
+OS_VER             := $(shell sw_vers -productVersion | awk -F. '{printf "%2d%02d%02d",$$1,$$2,$$3}')
+OS_GE_MAVERICKS    := $(shell if test $(OS_VER) -ge 101400; then echo true; fi)
+SIP_ENABLED        := $(findstring enabled, $(if $(shell which csrutil), $(shell csrutil status)))
 
 .PHONY: help install uninstall bootstrap bootout list
 
@@ -38,7 +42,7 @@ help: ## Show this help. This is default target.
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[1;4;39m%s\033[0m\n    %s\n\n", $$1, $$2}'
 
 install: $(PLIST_MKDIR) $(PLIST_DEFAULTS) $(PLIST_RMDIR) ## Generate service configuration files.
-	$(if $(findstring enabled, $(shell csrutil status)), $(info *** warning: SIP is enabled. Please make sure $(shell which defaults) is permitted 'Full Disk Access'. ))
+	$(if $(and $(SIP_ENABLED),$(OS_GE_MAVERICKS)), $(info *** warning: SIP is enabled. Please make sure $(shell which defaults) is permitted 'Full Disk Access'. ))
 
 bootstrap: ## Bootstrap services into gui domain of current user.
 	@test -f '$(PLIST_MKDIR)'    && launchctl bootstrap gui/$(UID)/ '$(PLIST_MKDIR)'
