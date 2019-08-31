@@ -57,7 +57,7 @@ bootout: ## Remove services from gui domain of current user.
 	@-launchctl bootout gui/$(UID)/$(LABEL_DEFAULTS)
 	@-launchctl bootout gui/$(UID)/$(LABEL_RMDIR)
 
-uninstall: bootout ## Delete service configuration files and some related files.
+uninstall: ## Delete service configuration files and related files.
 	@-rm '$(PLIST_DEFAULTS)' '$(PLIST_MKDIR)' '$(PLIST_RMDIR)' $(DIR_WORKING)/.$(NAME)
 	@-unlink '$(DIR_WORKING)/today'
 
