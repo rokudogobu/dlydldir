@@ -83,5 +83,5 @@ $(PLIST_DLYDLDIR):
 	@plutil -insert RunAtLoad -bool YES $@
 	@plutil -insert StartCalendarInterval -json '{"Minute": 0, "Hour": 0}' $@
 
-$(DIR_LAUNCHAGENTS), $(DIR_EXECUTABLE):
+$(DIR_LAUNCHAGENTS) $(DIR_EXECUTABLE):
 	@mkdir -p $@
