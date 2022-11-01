@@ -1,5 +1,5 @@
 
-#  Copyright (c) 2019-2021 rokudogobu
+#  Copyright (c) 2019-2022 rokudogobu
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -45,28 +45,30 @@ help: ## Show this help. This is default target.
 	@echo
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[1;4;39m%s\033[0m\n    %s\n\n", $$1, $$2}'
 
-generate: $(NAME) $(PLIST_DLYDLDIR) ## Build executable and generate service configuration file.
-
-install: generate $(DIR_LAUNCHAGENTS) $(DIR_EXECUTABLE) ## Generate and place the files.
-	@cp $(NAME) $(DIR_EXECUTABLE)
-	@cp $(PLIST_DLYDLDIR) $(DIR_LAUNCHAGENTS)
-	$(if $(and $(SIP_ENABLED),$(OS_GE_MAVERICKS)), $(info *** warning: SIP is enabled. Please make sure '$(DLYDLDIR_EXECUTABLE)' is permitted 'Full Disk Access'. ))
-
-bootstrap: ## Bootstrap service into gui domain of current user.
-	@test -f '$(DLYDLDIR_LAUNCHAGENT)' && launchctl bootstrap gui/$(UID)/ $(DLYDLDIR_LAUNCHAGENT)
-
-status: ## Display the last exit status of service.
-	@launchctl list | grep -G '^PID\|$(IDENTIFIER)'
-
-bootout: ## Remove service from gui domain of current user.
-	@-launchctl bootout gui/$(UID)/$(IDENTIFIER)
-
-uninstall: bootout ## Bootout and delete installed files.
-	@-rm $(DLYDLDIR_LAUNCHAGENT) $(DLYDLDIR_EXECUTABLE)
-	@-unlink $(DIR_WORKING)/today
+build: $(NAME) $(PLIST_DLYDLDIR) ## Build executable and generate service configuration file.
 
 clean: ## Delete generated files in project directory.
 	@-rm $(PLIST_DLYDLDIR) $(NAME)
+
+run: $(NAME) ## Run this program.
+	@$(NAME)
+
+install: generate run $(DIR_LAUNCHAGENTS) $(DIR_EXECUTABLE) ## Generate and place the files.
+	@cp $(NAME) $(DIR_EXECUTABLE)
+	@cp $(PLIST_DLYDLDIR) $(DIR_LAUNCHAGENTS)
+
+bootstrap: ## Bootstrap the service into gui domain of current user.
+	@test -f '$(DLYDLDIR_LAUNCHAGENT)' && launchctl bootstrap gui/$(UID)/ $(DLYDLDIR_LAUNCHAGENT)
+
+status: ## Display the last exit status of this service.
+	@launchctl list | grep -G '^PID\|$(IDENTIFIER)'
+
+bootout: ## Remove the service from gui domain of current user.
+	@-launchctl bootout gui/$(UID)/$(IDENTIFIER)
+
+uninstall: bootout ## Bootout and delete installed files.
+	@-rm $(DLYDLDIR_LAUNCHAGENT)
+	@-rm -rf "$(DIR_EXECUTABLE)"
 
 #
 #
@@ -80,6 +82,7 @@ $(PLIST_DLYDLDIR):
 	@plutil -insert Label -string '$(IDENTIFIER)' $@
 	@plutil -insert ProgramArguments -json '[]' $@
 	@plutil -insert ProgramArguments.0 -string '$(DLYDLDIR_EXECUTABLE)' $@
+	@plutil -insert ProgramArguments.1 -string '--nslog' $@
 	@plutil -insert RunAtLoad -bool YES $@
 	@plutil -insert StartCalendarInterval -json '{"Minute": 0, "Hour": 0}' $@
 
