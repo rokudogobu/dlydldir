@@ -79,7 +79,6 @@ $(PLIST_DLYDLDIR):
 	@plutil -insert ProgramArguments -json '[]' $@
 	@plutil -insert ProgramArguments.0 -string '$(DLYDLDIR_EXECUTABLE)' $@
 	@plutil -insert RunAtLoad -bool YES $@
-	@plutil -insert StartCalendarInterval -json '{"Minute": 0, "Hour": 0}' $@
 
 $(DIR_LAUNCHAGENTS) $(DIR_EXECUTABLE):
 	@mkdir -p $@

@@ -8,14 +8,14 @@ Because it cannot be changed programatically on Safari 15 or later.
 
 ## How to Use
 
-1. install this program, then `today` directory and `YYYY-MM-DD` symbolic link is created in `~/Downloads/`
+1. install this program, then `today` directory and `YYYY-MM-DD` (e.g. `2023-04-04`) symbolic link is created in `~/Downloads/`
 
 1. change the default download location to `~/Downloads/today` in your favorite browser
 
-1. when the date have chenged, the program does:
+1. when you log in, this program does:
 
-	- archive contents of `today` directory to linked `YYYY-MM-DD` directory
-	- create symbolic link `YYYY-MM-DD` to `today` directory
+	- archive contents of `today` directory to linked `YYYY-MM-DD` directory if the date is the past date
+	- create symbolic link `YYYY-MM-DD` to `today` directory if not exists
 	- trash (not remove) empty archive directories
 
 ## Installation
