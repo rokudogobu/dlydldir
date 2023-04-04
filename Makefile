@@ -26,16 +26,11 @@ UID                  := $(shell id -u)
 
 PLIST_DLYDLDIR        = $(IDENTIFIER).plist
 
-DIR_WORKING           = $(HOME)/Downloads
 DIR_LAUNCHAGENTS      = $(HOME)/Library/LaunchAgents
 DIR_EXECUTABLE        = $(libexecdir)/$(IDENTIFIER)
 
 DLYDLDIR_EXECUTABLE   = $(DIR_EXECUTABLE)/$(NAME)
 DLYDLDIR_LAUNCHAGENT  = $(DIR_LAUNCHAGENTS)/$(PLIST_DLYDLDIR)
-
-OS_VER               := $(shell sw_vers -productVersion | awk -F. '{printf "%2d%02d%02d",$$1,$$2,$$3}')
-OS_GE_MAVERICKS      := $(shell if test $(OS_VER) -ge 101400; then echo true; fi)
-SIP_ENABLED          := $(findstring enabled, $(if $(shell which csrutil), $(shell csrutil status)))
 
 .PHONY: help build install uninstall bootstrap bootout status clean
 
@@ -49,13 +44,6 @@ build: $(NAME) $(PLIST_DLYDLDIR) ## Build executable and generate service config
 
 clean: ## Delete generated files in project directory.
 	@-rm $(PLIST_DLYDLDIR) $(NAME)
-
-# run: $(NAME) ## Run this program.
-# 	@./$(NAME)
-
-# install: build run $(DIR_LAUNCHAGENTS) $(DIR_EXECUTABLE) ## Generate and place the files.
-# 	@cp $(NAME) $(DIR_EXECUTABLE)
-# 	@cp $(PLIST_DLYDLDIR) $(DIR_LAUNCHAGENTS)
 
 install: $(DLYDLDIR_EXECUTABLE) $(DLYDLDIR_LAUNCHAGENT) ## Generate and place the files.
 
@@ -90,7 +78,6 @@ $(PLIST_DLYDLDIR):
 	@plutil -insert Label -string '$(IDENTIFIER)' $@
 	@plutil -insert ProgramArguments -json '[]' $@
 	@plutil -insert ProgramArguments.0 -string '$(DLYDLDIR_EXECUTABLE)' $@
-#	@plutil -insert ProgramArguments.1 -string '--nslog' $@
 	@plutil -insert RunAtLoad -bool YES $@
 	@plutil -insert StartCalendarInterval -json '{"Minute": 0, "Hour": 0}' $@
 

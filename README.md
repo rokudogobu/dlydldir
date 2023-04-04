@@ -24,7 +24,7 @@ To install, please open Terminal.app and execute:
 
 	$ git clone https://github.com/rokudogobu/dlydldir.git
 	$ cd dlydldir
-	$ make install
+	$ make install && make bootstrap
 
 Then, an executable and a service configuration file 
 are installed into `~/.local/libexec/io.github.rokudogobu.dlydldir/` 
@@ -32,11 +32,6 @@ and `~/Library/LaunchAgents/`, respectively.
 
 When a pop-up which asks for a permission is displayed, 
 please allow this program to access Downloads folder.
-
-After re-login to your Mac or by executing following command, 
-installed agent will be started.
-
-	$ make bootstrap
 
 ## License
 

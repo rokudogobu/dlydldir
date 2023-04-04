@@ -58,14 +58,6 @@ extension ISO8601DateFormatter {
 //
 //
 
-// enum OperationErrorImportance {
-
-//   case ignorable
-//   case noteworthy
-//   case fatal
-
-// }
-
 enum OperationError:Error {
 
   case notExists(Item)
@@ -109,15 +101,6 @@ enum OperationError:Error {
         return "unknown error occured."
     }
   }
-
-  // private func err2str(_ err:Error) -> String {
-  //   if  NSError.Type {
-  //     let e = err as NSError
-  //     return "\(e.localizedFailureReason ?? e.localizedDescription) (\(e.code)@\(e.domain))"
-  //   } else {
-  //     return "\(err.localizedDescription) (\(String(describing:type(of:err)))"
-  //   }
-  // }
 
 }
 
@@ -607,99 +590,6 @@ final class DailyDownloadDirectory {
     try self.trashEmptyArchiveDirectories()
   }
 
-  //
-  //
-  //
-  // private func println(_ str:String) {
-  //   if usingNSLog {
-  //     NSLog("%s", str)
-  //   } else {
-  //     FileHandle.standardError
-  //               .println(str)
-  //   }
-  // }
-
-  // private func warn(withMessage msg:String) {
-  //   self.println("*** warning: " + msg)
-  // }
-
-  // private func error(withMessage msg:String = "encountered unknown error.", 
-  //                               code:Int32 = OperationError.unknown.code) {
-  //   self.println("*** error: " + msg)
-  //   exit(code)
-  // }
-
-  // private func err2msg(_ err:Error) -> String {
-  //   switch type(of:err) {
-  //     case is NSError.Type:
-  //       let e = err as NSError
-  //       return "\(e.localizedFailureReason ?? e.localizedDescription) (\(e.code)@\(e.domain))"
-  //     case is OperationError.Type:
-  //       return (err as! OperationError).localizedDescription
-  //     default:
-  //       return "\(err.localizedDescription) (\(type(of:err)))"
-  //   }
-  // }
-
-  //
-  //
-  //
-  func main() throws {
-    
-    try create()
-    do {
-      try archive()
-    } catch OperationError.notExists {
-      // if mark does not exist, do nothing
-    }
-    try mark()
-    try clean()
-
-    // do {
-      
-    //   try create()
-    //   do {
-    //     try archive()
-    //   } catch OperationError.notExists {
-    //     // if mark does not exist, do nothing
-    //   }
-    //   try mark()
-    //   try clean()
-
-    // } catch let err {
-
-    //   let msg = self.err2msg(err)
-
-    //   var exitCode:Int32 = -1
-    //   // var errImportance:OperationErrorImportance = .ignorable
-    //   switch type(of:err) {
-    //     case is OperationError.Type:
-    //       // switch err as! OperationError {
-    //       //   case .moveFailed:
-    //       //     errImportance = .noteworthy
-    //       //   default:
-    //       //     errImportance = .fatal
-    //       // }
-    //       exitCode = (err as! OperationError).code
-    //     default:
-    //       // errImportance = .noteworthy
-    //       exitCode = OperationError.unknown.code
-    //   }
-
-    //   // switch errImportance {
-    //   //   case .ignorable:
-    //   //     break
-    //   //   case .noteworthy:
-    //   //     self.warn(withMessage:msg)
-    //   //   case .fatal:
-    //   //     self.error(withMessage:msg, code:exitCode)
-    //   // }
-
-    //   self.error(withMessage:msg, code:exitCode)
-      
-    // }
-
-  }
 }
 
 
@@ -710,18 +600,15 @@ final class DailyDownloadDirectory {
 
 let dlydldir = DailyDownloadDirectory()
 
-var i = 1
-while i < CommandLine.arguments.count {
-  switch CommandLine.arguments[i].lowercased() {
-    // case "--nslog":
-    //   dlydldir.usingNSLog = true
-    default:
-      break
-  }
-  i += 1
-}
-
-// dlydldir.main()
+// var i = 1
+// while i < CommandLine.arguments.count {
+//   switch CommandLine.arguments[i].lowercased() {
+    
+//     default:
+//       break
+//   }
+//   i += 1
+// }
 
 do {
   
