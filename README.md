@@ -28,7 +28,7 @@ To install, please open Terminal.app and execute:
 
 Then, an executable and a service configuration file 
 are installed into `~/.local/libexec/io.github.rokudogobu.dlydldir/` 
-and `~/Library/LaunchAgents/` respectively.
+and `~/Library/LaunchAgents/`, respectively.
 
 When a pop-up which asks for a permission is displayed, 
 please allow this program to access Downloads folder.
@@ -40,7 +40,7 @@ installed agent will be started.
 
 ## License
 
-Copyright (c) 2019-2022 rokudogobu.  
+Copyright (c) 2019-2023 rokudogobu.  
 Licensed under the Apache License, Version 2.0.  
 See LICENSE for details.
 

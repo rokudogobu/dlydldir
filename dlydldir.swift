@@ -1,6 +1,6 @@
 
 //
-//  Copyright (c) 2019-2022 rokudogobu
+//  Copyright (c) 2019-2023 rokudogobu
 //
 //  Licensed under the Apache License, Version 2.0 (the "License");
 //  you may not use this file except in compliance with the License.
@@ -58,23 +58,23 @@ extension ISO8601DateFormatter {
 //
 //
 
-enum OperationErrorImportance {
+// enum OperationErrorImportance {
 
-  case ignorable
-  case noteworthy
-  case fatal
+//   case ignorable
+//   case noteworthy
+//   case fatal
 
-}
+// }
 
 enum OperationError:Error {
 
   case notExists(Item)
   case alreadyOccupied(Item)
-  case createFailed(Item, Error)
-  case trashFailed(Item, Error)
-  case moveFailed(String, Directory, Directory, Error)
+  case createFailed(Item, String)
+  case trashFailed(Item, String)
+  case moveFailed(String, Directory, Directory, String)
 
-  case unknown
+  case unknown(String)
 
   var code:Int32 {
     switch self {
@@ -99,24 +99,58 @@ enum OperationError:Error {
         return "'\(item.name)' not exists."
       case .alreadyOccupied(let item):
         return "'\(item.name)' is already occupied"
-      case .createFailed(let item, let error):
-        return "failed to create '\(item.name)'. (\(err2str(error)))"
-      case .trashFailed(let item, let error):
-        return "failed to trash '\(item.name)'. (\(err2str(error)))"
-      case .moveFailed(let name, let from, let to, let error):
-        return "failed to move '\(name)' from \(from.name)/ to \(to.name)/. (\(err2str(error)))"
+      case .createFailed(let item, let errdesc):
+        return "failed to create '\(item.name)'. (\(errdesc))"
+      case .trashFailed(let item, let errdesc):
+        return "failed to trash '\(item.name)'. (\(errdesc))"
+      case .moveFailed(let name, let from, let to, let errdesc):
+        return "failed to move '\(name)' from \(from.name)/ to \(to.name)/. (\(errdesc))"
       default:
         return "unknown error occured."
     }
   }
 
-  private func err2str(_ err:Error) -> String {
-    if type(of:err) is NSError.Type {
-      let e = err as NSError
-      return "\(e.localizedFailureReason ?? e.localizedDescription) (\(e.code)@\(e.domain))"
-    } else {
-      return "\(err.localizedDescription) (\(String(describing:type(of:err)))"
+  // private func err2str(_ err:Error) -> String {
+  //   if  NSError.Type {
+  //     let e = err as NSError
+  //     return "\(e.localizedFailureReason ?? e.localizedDescription) (\(e.code)@\(e.domain))"
+  //   } else {
+  //     return "\(err.localizedDescription) (\(String(describing:type(of:err)))"
+  //   }
+  // }
+
+}
+
+extension Error {
+
+  var toString:String {
+    let etype = type(of:self)
+    switch etype {
+      case is NSError.Type:
+        let e = self as NSError
+        return "\(e.localizedFailureReason ?? e.localizedDescription) (\(e.code)@\(e.domain))"
+      case is OperationError.Type:
+        return (self as! OperationError).localizedDescription
+      default:
+        return "\(self.localizedDescription) (\(etype))"
     }
+  }
+
+  var toCode:Int32 {
+    if type(of:self) is OperationError.Type {
+      return (self as! OperationError).code
+    } else {
+      return 255
+    }
+  }
+
+  func warn() {
+    NSLog("*** warning: " + self.toString)
+  }
+
+  func error() {
+    NSLog("*** error: " + self.toString)
+    exit(self.toCode)
   }
 
 }
@@ -266,7 +300,7 @@ extension Item {
                     .trashItem(at:self.url, 
                   resultingItemURL:nil)
     } catch {
-      throw OperationError.trashFailed(self, error)
+      throw OperationError.trashFailed(self, error.toString)
     }
   }
 
@@ -309,7 +343,7 @@ extension Directory {
             withIntermediateDirectories:false, 
                               attributes:nil)
     } catch {
-      throw OperationError.createFailed(self, error)
+      throw OperationError.createFailed(self, error.toString)
     }
   }
 
@@ -339,7 +373,7 @@ extension SymbolicLink {
                     .createSymbolicLink(at:self.url,
                         withDestinationURL:dest.url)
     } catch {
-      throw OperationError.createFailed(self, error)
+      throw OperationError.createFailed(self, error.toString)
     }
   }
 
@@ -418,7 +452,7 @@ final class DesignatedDownloadDirectory:DownloadsSubItem, Directory {
     do {
       try FileManager.default.moveItem(at:src, to:dst)
     } catch {
-      throw OperationError.moveFailed(name, self, dir, error)
+      throw OperationError.moveFailed(name, self, dir, error.toString)
     }
     
   }
@@ -475,7 +509,7 @@ final class DailyDownloadSymbolicLink:DownloadsDailySubItem, LocalizedToday, Sym
 final class DailyDownloadDirectory {
 
   let designated:DesignatedDownloadDirectory
-  var usingNSLog = false
+  // var usingNSLog = false
 
   init(withDesignated designated:DesignatedDownloadDirectory = .today) {
     self.designated = designated
@@ -576,87 +610,102 @@ final class DailyDownloadDirectory {
   //
   //
   //
-  private func println(_ str:String) {
-    if usingNSLog {
-      NSLog("%s", str)
-    } else {
-      FileHandle.standardError
-                .println(str)
-    }
-  }
+  // private func println(_ str:String) {
+  //   if usingNSLog {
+  //     NSLog("%s", str)
+  //   } else {
+  //     FileHandle.standardError
+  //               .println(str)
+  //   }
+  // }
 
-  private func warn(withMessage msg:String) {
-    self.println("*** warning: " + msg)
-  }
+  // private func warn(withMessage msg:String) {
+  //   self.println("*** warning: " + msg)
+  // }
 
-  private func error(withMessage msg:String = "encountered unknown error.", 
-                                code:Int32 = OperationError.unknown.code) {
-    self.println("*** error: " + msg)
-    exit(code)
-  }
+  // private func error(withMessage msg:String = "encountered unknown error.", 
+  //                               code:Int32 = OperationError.unknown.code) {
+  //   self.println("*** error: " + msg)
+  //   exit(code)
+  // }
 
-  private func err2msg(_ err:Error) -> String {
-    switch type(of:err) {
-      case is NSError.Type:
-        let e = err as NSError
-        return "\(e.localizedFailureReason ?? e.localizedDescription) (\(e.code)@\(e.domain))"
-      case is OperationError.Type:
-        return (err as! OperationError).localizedDescription
-      default:
-        return "\(err.localizedDescription) (\(type(of:err)))"
-    }
-  }
+  // private func err2msg(_ err:Error) -> String {
+  //   switch type(of:err) {
+  //     case is NSError.Type:
+  //       let e = err as NSError
+  //       return "\(e.localizedFailureReason ?? e.localizedDescription) (\(e.code)@\(e.domain))"
+  //     case is OperationError.Type:
+  //       return (err as! OperationError).localizedDescription
+  //     default:
+  //       return "\(err.localizedDescription) (\(type(of:err)))"
+  //   }
+  // }
 
   //
   //
   //
-  func main() {
+  func main() throws {
     
+    try create()
     do {
-      
-      try create()
       try archive()
-      try mark()
-      try clean()
-
-    } catch let err {
-
-      let msg = self.err2msg(err)
-
-      var exitCode:Int32 = -1
-      var errImportance:OperationErrorImportance = .ignorable
-      switch type(of:err) {
-        case is OperationError.Type:
-          switch err as! OperationError {
-            case .moveFailed:
-              errImportance = .noteworthy
-            default:
-              errImportance = .fatal
-          }
-          exitCode = (err as! OperationError).code
-        default:
-          errImportance = .noteworthy
-          exitCode = OperationError.unknown.code
-      }
-
-      switch errImportance {
-        case .ignorable:
-          break
-        case .noteworthy:
-          self.warn(withMessage:msg)
-        case .fatal:
-          self.error(withMessage:msg, code:exitCode)
-      }
-      
+    } catch OperationError.notExists {
+      // if mark does not exist, do nothing
     }
+    try mark()
+    try clean()
+
+    // do {
+      
+    //   try create()
+    //   do {
+    //     try archive()
+    //   } catch OperationError.notExists {
+    //     // if mark does not exist, do nothing
+    //   }
+    //   try mark()
+    //   try clean()
+
+    // } catch let err {
+
+    //   let msg = self.err2msg(err)
+
+    //   var exitCode:Int32 = -1
+    //   // var errImportance:OperationErrorImportance = .ignorable
+    //   switch type(of:err) {
+    //     case is OperationError.Type:
+    //       // switch err as! OperationError {
+    //       //   case .moveFailed:
+    //       //     errImportance = .noteworthy
+    //       //   default:
+    //       //     errImportance = .fatal
+    //       // }
+    //       exitCode = (err as! OperationError).code
+    //     default:
+    //       // errImportance = .noteworthy
+    //       exitCode = OperationError.unknown.code
+    //   }
+
+    //   // switch errImportance {
+    //   //   case .ignorable:
+    //   //     break
+    //   //   case .noteworthy:
+    //   //     self.warn(withMessage:msg)
+    //   //   case .fatal:
+    //   //     self.error(withMessage:msg, code:exitCode)
+    //   // }
+
+    //   self.error(withMessage:msg, code:exitCode)
+      
+    // }
 
   }
-
 }
 
 
+
 //
-//
+// main
 //
 
 let dlydldir = DailyDownloadDirectory()
@@ -664,13 +713,31 @@ let dlydldir = DailyDownloadDirectory()
 var i = 1
 while i < CommandLine.arguments.count {
   switch CommandLine.arguments[i].lowercased() {
-    case "--nslog":
-      dlydldir.usingNSLog = true
+    // case "--nslog":
+    //   dlydldir.usingNSLog = true
     default:
       break
   }
   i += 1
 }
 
-dlydldir.main()
+// dlydldir.main()
+
+do {
+  
+  try dlydldir.create()
+  do {
+    try dlydldir.archive()
+  } catch OperationError.notExists {
+    // if mark does not exist, do nothing
+  }
+  try dlydldir.mark()
+  try dlydldir.clean()
+
+} catch {
+
+  NSLog("*** error: " + error.toString)
+
+}
+
 

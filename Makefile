@@ -1,5 +1,5 @@
 
-#  Copyright (c) 2019-2022 rokudogobu
+#  Copyright (c) 2019-2023 rokudogobu
 #  
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -37,7 +37,7 @@ OS_VER               := $(shell sw_vers -productVersion | awk -F. '{printf "%2d%
 OS_GE_MAVERICKS      := $(shell if test $(OS_VER) -ge 101400; then echo true; fi)
 SIP_ENABLED          := $(findstring enabled, $(if $(shell which csrutil), $(shell csrutil status)))
 
-.PHONY: help generate install uninstall bootstrap bootout status clean
+.PHONY: help build install uninstall bootstrap bootout status clean
 
 .DEFAULT_GOAL := help
 
@@ -50,12 +50,14 @@ build: $(NAME) $(PLIST_DLYDLDIR) ## Build executable and generate service config
 clean: ## Delete generated files in project directory.
 	@-rm $(PLIST_DLYDLDIR) $(NAME)
 
-run: $(NAME) ## Run this program.
-	@$(NAME)
+# run: $(NAME) ## Run this program.
+# 	@./$(NAME)
 
-install: generate run $(DIR_LAUNCHAGENTS) $(DIR_EXECUTABLE) ## Generate and place the files.
-	@cp $(NAME) $(DIR_EXECUTABLE)
-	@cp $(PLIST_DLYDLDIR) $(DIR_LAUNCHAGENTS)
+# install: build run $(DIR_LAUNCHAGENTS) $(DIR_EXECUTABLE) ## Generate and place the files.
+# 	@cp $(NAME) $(DIR_EXECUTABLE)
+# 	@cp $(PLIST_DLYDLDIR) $(DIR_LAUNCHAGENTS)
+
+install: $(DLYDLDIR_EXECUTABLE) $(DLYDLDIR_LAUNCHAGENT) ## Generate and place the files.
 
 bootstrap: ## Bootstrap the service into gui domain of current user.
 	@test -f '$(DLYDLDIR_LAUNCHAGENT)' && launchctl bootstrap gui/$(UID)/ $(DLYDLDIR_LAUNCHAGENT)
@@ -77,12 +79,18 @@ uninstall: bootout ## Bootout and delete installed files.
 $(NAME): *.swift
 	@swiftc -O -framework Foundation -o $@ $^
 
+$(DLYDLDIR_EXECUTABLE): $(NAME) $(DIR_EXECUTABLE)
+	@cp $^
+
+$(DLYDLDIR_LAUNCHAGENT): $(PLIST_DLYDLDIR) $(DIR_LAUNCHAGENTS) 
+	@cp $^
+
 $(PLIST_DLYDLDIR):
 	@echo '' | plutil -convert xml1 -o $@ -
 	@plutil -insert Label -string '$(IDENTIFIER)' $@
 	@plutil -insert ProgramArguments -json '[]' $@
 	@plutil -insert ProgramArguments.0 -string '$(DLYDLDIR_EXECUTABLE)' $@
-	@plutil -insert ProgramArguments.1 -string '--nslog' $@
+#	@plutil -insert ProgramArguments.1 -string '--nslog' $@
 	@plutil -insert RunAtLoad -bool YES $@
 	@plutil -insert StartCalendarInterval -json '{"Minute": 0, "Hour": 0}' $@
 
