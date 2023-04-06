@@ -34,7 +34,7 @@ extension FileHandle {
   
   func print(_ str:String) {
     try? str.utf8CString.withUnsafeBufferPointer {(buf) in 
-      try FileHandle.standardError.write(contentsOf:Data(buffer:buf))
+      try self.write(contentsOf:Data(buffer:buf))
     }
   }
   
@@ -50,6 +50,44 @@ extension ISO8601DateFormatter {
     self.init()
     self.formatOptions = opts
     self.timeZone      = tz
+  }
+
+}
+
+extension Error {
+
+  var toString:String {
+    let etype = type(of:self)
+    switch etype {
+      case is NSError.Type:
+        let e = self as NSError
+        return "\(e.localizedFailureReason ?? e.localizedDescription) (\(e.code)@\(e.domain))"
+      case is OperationError.Type:
+        return (self as! OperationError).localizedDescription
+      default:
+        return "\(self.localizedDescription) (\(etype))"
+    }
+  }
+
+  var toCode:Int32 {
+    if type(of:self) is OperationError.Type {
+      return (self as! OperationError).code
+    } else {
+      return 255
+    }
+  }
+
+  func print(withPrefix prefix:String = "", to:FileHandle? = nil) {
+    let str = prefix + self.toString
+    if let to = to {
+      to.println(str)
+    } else {
+      NSLog(str)
+    }
+  }
+
+  func exit() {
+    Darwin.exit(self.toCode)
   }
 
 }
@@ -100,40 +138,6 @@ enum OperationError:Error {
       default:
         return "unknown error occured."
     }
-  }
-
-}
-
-extension Error {
-
-  var toString:String {
-    let etype = type(of:self)
-    switch etype {
-      case is NSError.Type:
-        let e = self as NSError
-        return "\(e.localizedFailureReason ?? e.localizedDescription) (\(e.code)@\(e.domain))"
-      case is OperationError.Type:
-        return (self as! OperationError).localizedDescription
-      default:
-        return "\(self.localizedDescription) (\(etype))"
-    }
-  }
-
-  var toCode:Int32 {
-    if type(of:self) is OperationError.Type {
-      return (self as! OperationError).code
-    } else {
-      return 255
-    }
-  }
-
-  func warn() {
-    NSLog("*** warning: " + self.toString)
-  }
-
-  func error() {
-    NSLog("*** error: " + self.toString)
-    exit(self.toCode)
   }
 
 }
@@ -623,7 +627,7 @@ do {
 
 } catch {
 
-  NSLog("*** error: " + error.toString)
+  error.print(withPrefix:"*** ERROR")
 
 }
 
