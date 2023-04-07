@@ -77,7 +77,7 @@ extension Error {
     }
   }
 
-  func print(withPrefix prefix:String = "", to:FileHandle? = nil) {
+  func println(withPrefix prefix:String = "", to:FileHandle? = nil) {
     let str = prefix + self.toString
     if let to = to {
       to.println(str)
@@ -98,11 +98,11 @@ extension Error {
 
 enum OperationError:Error {
 
-  case notExists(Item)
-  case alreadyOccupied(Item)
-  case createFailed(Item, String)
-  case trashFailed(Item, String)
-  case moveFailed(String, Directory, Directory, String)
+  case notExists(URL)
+  case alreadyOccupied(URL)
+  case createFailed(URL, String)
+  case trashFailed(URL, String)
+  case moveFailed(URL, URL, String)
 
   case unknown(String)
 
@@ -125,16 +125,16 @@ enum OperationError:Error {
 
   var localizedDescription:String {
     switch self {
-      case .notExists(let item):
-        return "'\(item.name)' not exists."
-      case .alreadyOccupied(let item):
-        return "'\(item.name)' is already occupied"
-      case .createFailed(let item, let errdesc):
-        return "failed to create '\(item.name)'. (\(errdesc))"
-      case .trashFailed(let item, let errdesc):
-        return "failed to trash '\(item.name)'. (\(errdesc))"
-      case .moveFailed(let name, let from, let to, let errdesc):
-        return "failed to move '\(name)' from \(from.name)/ to \(to.name)/. (\(errdesc))"
+      case .notExists(let url):
+        return "'\(url.path)' not exists."
+      case .alreadyOccupied(let url):
+        return "'\(url.path)' is already occupied"
+      case .createFailed(let url, let errdesc):
+        return "failed to create '\(url.path)'. (\(errdesc))"
+      case .trashFailed(let url, let errdesc):
+        return "failed to trash '\(url.path)'. (\(errdesc))"
+      case let .moveFailed(src, dst, errdesc):
+        return "failed to move item from \(src.path)/ to \(dst.path)/. (\(errdesc))"
       default:
         return "unknown error occured."
     }
@@ -281,13 +281,31 @@ extension Item {
     return (!self.isSymbolicLink) && self.isAliasFile
   }
 
+  func move<T:Item>(to:T) throws {
+    
+    guard self.doesExist else {
+      throw OperationError.notExists(self.url)
+    }
+
+    do {
+      try FileManager.default.moveItem(at:self.url, to:to.url)
+    } catch {
+      throw OperationError.moveFailed(self.url, to.url, error.toString)
+    }
+  }
+
   func trash(force:Bool = false) throws {
+    
+    guard self.doesExist else {
+      throw OperationError.notExists(self.url)
+    }
+
     do {
       try FileManager.default
                     .trashItem(at:self.url, 
                   resultingItemURL:nil)
     } catch {
-      throw OperationError.trashFailed(self, error.toString)
+      throw OperationError.trashFailed(self.url, error.toString)
     }
   }
 
@@ -330,7 +348,7 @@ extension Directory {
             withIntermediateDirectories:false, 
                               attributes:nil)
     } catch {
-      throw OperationError.createFailed(self, error.toString)
+      throw OperationError.createFailed(self.url, error.toString)
     }
   }
 
@@ -360,7 +378,7 @@ extension SymbolicLink {
                     .createSymbolicLink(at:self.url,
                         withDestinationURL:dest.url)
     } catch {
-      throw OperationError.createFailed(self, error.toString)
+      throw OperationError.createFailed(self.url, error.toString)
     }
   }
 
@@ -439,15 +457,19 @@ final class DesignatedDownloadDirectory:DownloadsSubItem, Directory {
     do {
       try FileManager.default.moveItem(at:src, to:dst)
     } catch {
-      throw OperationError.moveFailed(name, self, dir, error.toString)
+      throw OperationError.moveFailed(src, dst, error.toString)
     }
     
   }
 
-  func moveContents<T:Directory>(to dir:T) throws {
+  func moveContents<T:Directory>(to dir:T) {
     
-    try self.contents.forEach {src in 
-      try self.moveContent(at:src, to:dir)
+    self.contents.forEach {src in 
+      do {
+        try self.moveContent(at:src, to:dir)
+      } catch {
+        error.println(withPrefix: "*** warning: ")
+      }
     }
     
   }
@@ -520,7 +542,7 @@ final class DailyDownloadDirectory {
     if self.designated.doesExist {
       return
     } else if self.designated.isReachable {
-      throw OperationError.alreadyOccupied(self.designated)
+      throw OperationError.alreadyOccupied(self.designated.url)
     } else {
       try self.designated.create()
     }
@@ -530,11 +552,11 @@ final class DailyDownloadDirectory {
   func archive() throws {
     
     guard self.designated.doesExist else {
-      throw OperationError.notExists(self.designated)
+      throw OperationError.notExists(self.designated.url)
     }
 
     guard let mark = self.marks.last else {
-      throw OperationError.notExists(DailyDownloadSymbolicLink.today)
+      throw OperationError.notExists(DailyDownloadSymbolicLink.today.url)
     }
 
     if mark.isToday {
@@ -546,7 +568,7 @@ final class DailyDownloadDirectory {
     let dir = DailyArchiveDirectory(withLocalizedDate:mark.localizedDate)
     try dir.create()
 
-    try self.designated.moveContents(to:dir)  
+    self.designated.moveContents(to:dir)  
 
   }
 
@@ -563,7 +585,7 @@ final class DailyDownloadDirectory {
   func mark(as localizedDate:LocalizedDate = .today) throws {
 
     guard self.designated.doesExist else {
-      throw OperationError.notExists(self.designated)
+      throw OperationError.notExists(self.designated.url)
     }
 
     let mark = DailyDownloadSymbolicLink(withLocalizedDate:localizedDate)
@@ -627,7 +649,7 @@ do {
 
 } catch {
 
-  error.print(withPrefix:"*** ERROR")
+  error.println(withPrefix:"*** ERROR")
 
 }
 
