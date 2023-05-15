@@ -33,8 +33,8 @@ extension FileManager {
 extension FileHandle {
   
   func print(_ str:String) {
-    try? str.utf8CString.withUnsafeBufferPointer {(buf) in 
-      try self.write(contentsOf:Data(buffer:buf))
+    str.utf8CString.withUnsafeBufferPointer {(buf) in 
+      self.write(Data(buffer:buf))
     }
   }
   
@@ -151,8 +151,8 @@ struct LocalizedDate {
   private static let formatter = ISO8601DateFormatter(withFormatOptions:[.withFullDate, .withDashSeparatorInDate], 
                                                                timeZone:.current)
 
-  static var today:Self     {return .init(fromDate:.now)}
-  static var yesterday:Self {return .init(fromDate:.init(timeIntervalSinceNow:-86400))}
+  static var today:LocalizedDate     {return .init(fromDate:.now)}
+  static var yesterday:LocalizedDate {return .init(fromDate:.init(timeIntervalSinceNow:-86400))}
 
   static let distantPast:LocalizedDate = .init(fromDate:.distantPast)
 
@@ -160,12 +160,12 @@ struct LocalizedDate {
   let string:String
 
   init(fromDate date:Date) {
-    self.string = Self.formatter.string(from:date)
-    self.date   = Self.formatter.date(from:string)!
+    self.string = LocalizedDate.formatter.string(from:date)
+    self.date   = LocalizedDate.formatter.date(from:string)!
   }
 
   init?(fromString string:String) {
-    if let date = Self.formatter.date(from:string) {
+    if let date = LocalizedDate.formatter.date(from:string) {
       self.init(fromDate:date)
     } else {
       self.init(fromDate:.distantPast)
@@ -176,11 +176,15 @@ struct LocalizedDate {
 }
 
 extension LocalizedDate:Equatable {
-  static func == (lhs:Self, rhs:Self) -> Bool {return lhs.date == rhs.date}
+  static func == (lhs:LocalizedDate, rhs:LocalizedDate) -> Bool {
+    return lhs.date == rhs.date
+  }
 }
 
 extension LocalizedDate:Comparable {
-  static func <  (lhs:Self, rhs:Self) -> Bool {return lhs.date <  rhs.date}
+  static func <  (lhs:LocalizedDate, rhs:LocalizedDate) -> Bool {
+    return lhs.date <  rhs.date
+  }
 }
 
 //
@@ -397,9 +401,9 @@ class DownloadsSubItem:Item {
   let url:URL
 
   init(withName name:String) {
-    self.url = Self.parent
-                   .appendingPathComponent(name, isDirectory:true)
-                   .absoluteURL
+    self.url = DownloadsSubItem.parent
+                               .appendingPathComponent(name, isDirectory:true)
+                               .absoluteURL
   }
 
 }
@@ -483,9 +487,9 @@ final class DailyArchiveDirectory:DownloadsDailySubItem, LocalizedToday, Directo
   
   class func list() -> [DailyArchiveDirectory] {
     return FileManager.default
-                      .contentsOfDirectory(at:Self.parent)
+                      .contentsOfDirectory(at:DailyArchiveDirectory.parent)
                       .compactMap {
-                        Self(fromString:$0.lastPathComponent)
+                        DailyArchiveDirectory(fromString:$0.lastPathComponent)
                       }.filter {
                         $0.doesExist && $0.isPast
                       }.sorted {
@@ -499,9 +503,9 @@ final class DailyDownloadSymbolicLink:DownloadsDailySubItem, LocalizedToday, Sym
   
   class func list() -> [DailyDownloadSymbolicLink] {
     return FileManager.default
-                      .contentsOfDirectory(at:Self.parent)
+                      .contentsOfDirectory(at:DailyDownloadSymbolicLink.parent)
                       .compactMap {
-                        Self(fromString:$0.lastPathComponent)
+                        DailyDownloadSymbolicLink(fromString:$0.lastPathComponent)
                       }.filter {
                         $0.doesExist && !$0.isFuture
                       }.sorted {
